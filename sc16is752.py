@@ -5,6 +5,30 @@
 
 from machine import Pin, I2C
 
+# Logging levels
+LOG_NONE = const(0)  # Threshold level: disables all logging
+LOG_ERROR = const(1)
+LOG_INFO = const(2)
+LOG_DEBUG = const(3)
+
+# Global log level setting (can be changed by user)
+_log_level = LOG_INFO
+
+# Level names dictionary (constant to avoid recreating on every call)
+# Note: LOG_NONE is not included as it's a threshold level, not a message level
+_LOG_LEVEL_NAMES = {LOG_ERROR: '[ERROR]', LOG_INFO: '[INFO]', LOG_DEBUG: '[DEBUG]'}
+
+def set_log_level(level):
+    """Set the logging level. Use LOG_NONE, LOG_ERROR, LOG_INFO, or LOG_DEBUG."""
+    global _log_level
+    _log_level = level
+
+def _log(level, *args):
+    """Internal logging function."""
+    global _log_level
+    if level <= _log_level:
+        print(_LOG_LEVEL_NAMES.get(level, ''), *args)
+
 # Channel definitions
 SC16IS752_CHANNEL_A = const(0x00)
 SC16IS752_CHANNEL_B = const(0x01)
@@ -68,7 +92,7 @@ class SC16IS752():
         # note that << 3 shift, it is not documented but it gets the REAL address of a register
         # from the address listed in the manual, the same is for the channels
         result = self._i2c.readfrom_mem(self._deviceAddress, regAddress << 3 | self._channel << 1, 1)
-        #print('READ REGISTER', regAddress, 'RESULT: ', result)
+        _log(LOG_DEBUG, 'READ REGISTER', regAddress, 'RESULT:', result)
         return result
     
 
@@ -79,7 +103,7 @@ class SC16IS752():
             r = bytes([data])
         
         self._i2c.writeto_mem(self._deviceAddress, regAddress << 3 | self._channel << 1, r)
-        #print('WRITE REGISTER: ', regAddress << 3 | self._channel << 1, 'DATA: ', r)
+        _log(LOG_DEBUG, 'WRITE REGISTER:', regAddress << 3 | self._channel << 1, 'DATA:', r)
 
 
     def _uartConnected(self):
@@ -108,17 +132,17 @@ class SC16IS752():
   
         # This alternative just checks if there's data but doesn't
         # return how many characters are in the buffer:
-        # print('LSR register: ', self._readRegister(SC16IS752_LSR))
-        # print('The data stored in the receive buffer', self._bitwise_and_bytes(self._readRegister(SC16IS752_LSR), b'\x01'))
+        _log(LOG_DEBUG, 'LSR register:', self._readRegister(SC16IS752_LSR))
+        _log(LOG_DEBUG, 'The data stored in the receive buffer', self._bitwise_and_bytes(self._readRegister(SC16IS752_LSR), b'\x01'))
         
         return int.from_bytes(self._readRegister(SC16IS752_RXLVL), 'big')
 
 
     def txBufferSize(self):
 	    #  returns the number of empty spaces in the tx buffer, so 0 means it's full
-        print('TEXT BUFFER SIZE: ', self._readRegister(SC16IS752_TXLVL))
-
-        return self._readRegister(SC16IS752_TXLVL)
+        result = self._readRegister(SC16IS752_TXLVL)
+        _log(LOG_DEBUG, 'TEXT BUFFER SIZE:', result)
+        return result
 
 
     def read_byte(self):
@@ -149,23 +173,23 @@ class SC16IS752():
     #  ----------------------------------- added by rsk -------
 
     def flush(self):
-        print('[INFO]:Flushing the buffer...')
+        _log(LOG_INFO, 'Flushing the buffer...')
         while self.available() > 0:
             self.read_byte()
 
 
     def SetBaudrate(self, baudrateDivisor):
         #  uses baud rate divisor from p17 of the datasheet.
-        print('[INFO]: Setting baud rate...')
+        _log(LOG_INFO, 'Setting baud rate...')
         temp_lcr = self._readRegister(SC16IS752_LCR)
         temp_lcr = self._bitwise_or_bytes(bytes(temp_lcr), b'\x80')
 
         self._writeRegister(SC16IS752_LCR, temp_lcr[0])
         # write to DLL
-        #print('SetBaudrate baudrateDivisor: ', baudrateDivisor)
+        _log(LOG_DEBUG, 'SetBaudrate baudrateDivisor:', baudrateDivisor)
         self._writeRegister(SC16IS752_DLL, baudrateDivisor)
         # write to DLH
-        #print('SetBaudrate baudrateDivisor>>8: ', baudrateDivisor>>8)
+        _log(LOG_DEBUG, 'SetBaudrate baudrateDivisor>>8:', baudrateDivisor>>8)
         self._writeRegister(SC16IS752_DLH, baudrateDivisor>>8)
 
         temp_lcr= self._bitwise_and_bytes(bytes(temp_lcr), b'\x7F')
@@ -178,12 +202,12 @@ class SC16IS752():
 
         reg = self._readRegister(SC16IS752_IOControl)
         reg = self._bitwise_or_bytes(bytes(reg), b'\x08')
-        # print('REG: ', reg)
+        _log(LOG_DEBUG, 'REG:', reg)
         self._writeRegister(SC16IS752_IOControl, reg[0])
 
 
     def FIFOEnable(self, fifo_enable):
-        print('[INFO]: Enabling FIFO...')
+        _log(LOG_INFO, 'Enabling FIFO...')
         temp_fcr = self._readRegister(SC16IS752_FCR)
 
         if fifo_enable == 0:
@@ -195,12 +219,11 @@ class SC16IS752():
 
 
     def SetLine(self, data_length, parity_select, stop_length):
-        print('[INFO]: Setting the line...')
+        _log(LOG_INFO, 'Setting the line...')
         temp_lcr = self._readRegister(SC16IS752_LCR)
         temp_lcr = self._bitwise_and_bytes(bytes(temp_lcr), b'\xC0') # Clear the lower six bit of LCR (LCR[0] to LCR[5]
 
-        #print("LCR Register:0x")
-        #print(temp_lcr)
+        _log(LOG_DEBUG, 'LCR Register:0x', temp_lcr)
 
         # data length settings
         if data_length == 5:          
