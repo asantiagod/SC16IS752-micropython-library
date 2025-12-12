@@ -223,8 +223,7 @@ class SC16IS752():
         temp_lcr = self._readRegister(SC16IS752_LCR)
         temp_lcr = self._bitwise_and_bytes(bytes(temp_lcr), b'\xC0') # Clear the lower six bit of LCR (LCR[0] to LCR[5]
 
-        _log(LOG_DEBUG, "LCR Register:0x")
-        _log(LOG_DEBUG, temp_lcr)
+        _log(LOG_DEBUG, 'LCR Register:0x', temp_lcr)
 
         # data length settings
         if data_length == 5:          
