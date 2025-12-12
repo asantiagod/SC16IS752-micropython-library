@@ -5,6 +5,27 @@
 
 from machine import Pin, I2C
 
+# Logging levels
+LOG_NONE = const(0)
+LOG_ERROR = const(1)
+LOG_INFO = const(2)
+LOG_DEBUG = const(3)
+
+# Global log level setting (can be changed by user)
+_log_level = LOG_INFO
+
+def set_log_level(level):
+    """Set the logging level. Use LOG_NONE, LOG_ERROR, LOG_INFO, or LOG_DEBUG."""
+    global _log_level
+    _log_level = level
+
+def _log(level, *args):
+    """Internal logging function."""
+    global _log_level
+    if level <= _log_level:
+        level_names = {LOG_ERROR: '[ERROR]', LOG_INFO: '[INFO]', LOG_DEBUG: '[DEBUG]'}
+        print(level_names.get(level, ''), *args)
+
 # Channel definitions
 SC16IS752_CHANNEL_A = const(0x00)
 SC16IS752_CHANNEL_B = const(0x01)
@@ -116,7 +137,7 @@ class SC16IS752():
 
     def txBufferSize(self):
 	    #  returns the number of empty spaces in the tx buffer, so 0 means it's full
-        print('TEXT BUFFER SIZE: ', self._readRegister(SC16IS752_TXLVL))
+        _log(LOG_DEBUG, 'TEXT BUFFER SIZE:', self._readRegister(SC16IS752_TXLVL))
 
         return self._readRegister(SC16IS752_TXLVL)
 
@@ -149,14 +170,14 @@ class SC16IS752():
     #  ----------------------------------- added by rsk -------
 
     def flush(self):
-        print('[INFO]:Flushing the buffer...')
+        _log(LOG_INFO, 'Flushing the buffer...')
         while self.available() > 0:
             self.read_byte()
 
 
     def SetBaudrate(self, baudrateDivisor):
         #  uses baud rate divisor from p17 of the datasheet.
-        print('[INFO]: Setting baud rate...')
+        _log(LOG_INFO, 'Setting baud rate...')
         temp_lcr = self._readRegister(SC16IS752_LCR)
         temp_lcr = self._bitwise_or_bytes(bytes(temp_lcr), b'\x80')
 
@@ -183,7 +204,7 @@ class SC16IS752():
 
 
     def FIFOEnable(self, fifo_enable):
-        print('[INFO]: Enabling FIFO...')
+        _log(LOG_INFO, 'Enabling FIFO...')
         temp_fcr = self._readRegister(SC16IS752_FCR)
 
         if fifo_enable == 0:
@@ -195,7 +216,7 @@ class SC16IS752():
 
 
     def SetLine(self, data_length, parity_select, stop_length):
-        print('[INFO]: Setting the line...')
+        _log(LOG_INFO, 'Setting the line...')
         temp_lcr = self._readRegister(SC16IS752_LCR)
         temp_lcr = self._bitwise_and_bytes(bytes(temp_lcr), b'\xC0') # Clear the lower six bit of LCR (LCR[0] to LCR[5]
 
