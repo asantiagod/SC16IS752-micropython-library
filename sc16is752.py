@@ -6,7 +6,7 @@
 from machine import Pin, I2C
 
 # Logging levels
-LOG_NONE = const(0)
+LOG_NONE = const(0)  # Threshold level: disables all logging
 LOG_ERROR = const(1)
 LOG_INFO = const(2)
 LOG_DEBUG = const(3)
@@ -15,6 +15,7 @@ LOG_DEBUG = const(3)
 _log_level = LOG_INFO
 
 # Level names dictionary (constant to avoid recreating on every call)
+# Note: LOG_NONE is not included as it's a threshold level, not a message level
 _LOG_LEVEL_NAMES = {LOG_ERROR: '[ERROR]', LOG_INFO: '[INFO]', LOG_DEBUG: '[DEBUG]'}
 
 def set_log_level(level):
