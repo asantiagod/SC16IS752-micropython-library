@@ -14,6 +14,9 @@ LOG_DEBUG = const(3)
 # Global log level setting (can be changed by user)
 _log_level = LOG_INFO
 
+# Level names dictionary (constant to avoid recreating on every call)
+_LOG_LEVEL_NAMES = {LOG_ERROR: '[ERROR]', LOG_INFO: '[INFO]', LOG_DEBUG: '[DEBUG]'}
+
 def set_log_level(level):
     """Set the logging level. Use LOG_NONE, LOG_ERROR, LOG_INFO, or LOG_DEBUG."""
     global _log_level
@@ -23,8 +26,7 @@ def _log(level, *args):
     """Internal logging function."""
     global _log_level
     if level <= _log_level:
-        level_names = {LOG_ERROR: '[ERROR]', LOG_INFO: '[INFO]', LOG_DEBUG: '[DEBUG]'}
-        print(level_names.get(level, ''), *args)
+        print(_LOG_LEVEL_NAMES.get(level, ''), *args)
 
 # Channel definitions
 SC16IS752_CHANNEL_A = const(0x00)
@@ -137,9 +139,9 @@ class SC16IS752():
 
     def txBufferSize(self):
 	    #  returns the number of empty spaces in the tx buffer, so 0 means it's full
-        _log(LOG_DEBUG, 'TEXT BUFFER SIZE:', self._readRegister(SC16IS752_TXLVL))
-
-        return self._readRegister(SC16IS752_TXLVL)
+        result = self._readRegister(SC16IS752_TXLVL)
+        _log(LOG_DEBUG, 'TEXT BUFFER SIZE:', result)
+        return result
 
 
     def read_byte(self):
