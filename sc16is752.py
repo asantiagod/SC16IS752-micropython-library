@@ -92,7 +92,7 @@ class SC16IS752():
         # note that << 3 shift, it is not documented but it gets the REAL address of a register
         # from the address listed in the manual, the same is for the channels
         result = self._i2c.readfrom_mem(self._deviceAddress, regAddress << 3 | self._channel << 1, 1)
-        #print('READ REGISTER', regAddress, 'RESULT: ', result)
+        _log(LOG_DEBUG, 'READ REGISTER', regAddress, 'RESULT:', result)
         return result
     
 
@@ -103,7 +103,7 @@ class SC16IS752():
             r = bytes([data])
         
         self._i2c.writeto_mem(self._deviceAddress, regAddress << 3 | self._channel << 1, r)
-        #print('WRITE REGISTER: ', regAddress << 3 | self._channel << 1, 'DATA: ', r)
+        _log(LOG_DEBUG, 'WRITE REGISTER:', regAddress << 3 | self._channel << 1, 'DATA:', r)
 
 
     def _uartConnected(self):
@@ -132,8 +132,8 @@ class SC16IS752():
   
         # This alternative just checks if there's data but doesn't
         # return how many characters are in the buffer:
-        # print('LSR register: ', self._readRegister(SC16IS752_LSR))
-        # print('The data stored in the receive buffer', self._bitwise_and_bytes(self._readRegister(SC16IS752_LSR), b'\x01'))
+        _log(LOG_DEBUG, 'LSR register:', self._readRegister(SC16IS752_LSR))
+        _log(LOG_DEBUG, 'The data stored in the receive buffer', self._bitwise_and_bytes(self._readRegister(SC16IS752_LSR), b'\x01'))
         
         return int.from_bytes(self._readRegister(SC16IS752_RXLVL), 'big')
 
@@ -186,10 +186,10 @@ class SC16IS752():
 
         self._writeRegister(SC16IS752_LCR, temp_lcr[0])
         # write to DLL
-        #print('SetBaudrate baudrateDivisor: ', baudrateDivisor)
+        _log(LOG_DEBUG, 'SetBaudrate baudrateDivisor:', baudrateDivisor)
         self._writeRegister(SC16IS752_DLL, baudrateDivisor)
         # write to DLH
-        #print('SetBaudrate baudrateDivisor>>8: ', baudrateDivisor>>8)
+        _log(LOG_DEBUG, 'SetBaudrate baudrateDivisor>>8:', baudrateDivisor>>8)
         self._writeRegister(SC16IS752_DLH, baudrateDivisor>>8)
 
         temp_lcr= self._bitwise_and_bytes(bytes(temp_lcr), b'\x7F')
@@ -202,7 +202,7 @@ class SC16IS752():
 
         reg = self._readRegister(SC16IS752_IOControl)
         reg = self._bitwise_or_bytes(bytes(reg), b'\x08')
-        # print('REG: ', reg)
+        _log(LOG_DEBUG, 'REG:', reg)
         self._writeRegister(SC16IS752_IOControl, reg[0])
 
 
@@ -223,8 +223,8 @@ class SC16IS752():
         temp_lcr = self._readRegister(SC16IS752_LCR)
         temp_lcr = self._bitwise_and_bytes(bytes(temp_lcr), b'\xC0') # Clear the lower six bit of LCR (LCR[0] to LCR[5]
 
-        #print("LCR Register:0x")
-        #print(temp_lcr)
+        _log(LOG_DEBUG, "LCR Register:0x")
+        _log(LOG_DEBUG, temp_lcr)
 
         # data length settings
         if data_length == 5:          
